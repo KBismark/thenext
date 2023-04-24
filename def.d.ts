@@ -231,8 +231,8 @@ declare global {
     onerror: () => void;
     onerrorOnce: () => void;
     pathname: string;
-    gobal: null;
-    export: null;
+    gobal: [];
+    export: {};
     import: {
       from(module_src: string, alternate_server_side_module_src?: string): {};
       global: {};
