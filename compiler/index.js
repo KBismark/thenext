@@ -76,6 +76,8 @@ const server = http.createServer(function (req, res) {
           }
           if (fileContent !== null) {
             switch (pathname.split("/")[2]) {
+              case "style":
+              case "styles":
               case "css":
                 res
                   .writeHead(200, {
@@ -83,6 +85,8 @@ const server = http.createServer(function (req, res) {
                   })
                   .write(fileContent);
                 break;
+              case "script":
+              case "scripts":
               case "js":
                 res
                   .writeHead(200, {
@@ -90,6 +94,10 @@ const server = http.createServer(function (req, res) {
                   })
                   .write(fileContent);
                 break;
+              case "image":
+              case "images":
+              case "photo":
+              case "photos":
               case "img":
                 var imageType = splited_url[3].split(".").pop().toLowerCase();
                 if (imageType !== "svg") {
@@ -106,6 +114,7 @@ const server = http.createServer(function (req, res) {
                     .write(fileContent);
                 }
                 break;
+              case "font":
               case "fonts":
                 var fontType = splited_url[3].split(".").pop().toLowerCase();
                 switch (fontType) {
