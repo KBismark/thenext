@@ -1,0 +1,15 @@
+{
+  "name": "breaker-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./compiler/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./compiler/index.js",
+    "dev": "node ./compiler/index.js"
+  },
+  "dependencies": {},
+  "author": "",
+  "license": "MIT",
+  "ssr": false
+}
