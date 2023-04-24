@@ -19,7 +19,7 @@ const {
   getWatcherUpdates,
   watchFile,
 } = require("./lib/watcher");
-var basedir = __dirname.split("jshon-compiler");
+var basedir = __dirname.split("compiler");
 basedir.pop();
 basedir = basedir.join("");
 const srcDir = path.join(basedir, "src");

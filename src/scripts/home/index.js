@@ -15,7 +15,7 @@ const {
 function UserCard() {
   this.elements = {
     backImg: {
-      src: "C:/Users/Winfred/Desktop/kbis/code/images/lady.jpg",
+      src: "/statics/images/lady.jpg",
       $events: {
         load: function (e, This) {
           setStyle(This, "backImg", { display: "block" });
@@ -24,7 +24,7 @@ function UserCard() {
       },
     },
     profileImg: {
-      src: "C:/Users/Winfred/Desktop/kbis/code/images/lady.jpg",
+      src: "/statics/images/lady.jpg",
       $events: {
         load: function (e, This) {
           setClass(This, "profileImgCon", {
@@ -270,7 +270,7 @@ NavigationLink = createComponent(NavigationLink);
 function TopicsLink() {
   this.elements = {
     image1: {
-      src: "C:/Users/Winfred/Desktop/kbis/code/images/lady.jpg",
+      src: "/statics/images/lady.jpg",
       $events: {
         load: function OnLoad(e, This) {
           setStyle(This, "image1", { display: "block" });
@@ -278,7 +278,7 @@ function TopicsLink() {
       },
     },
     image2: {
-      src: "C:/Users/Winfred/Desktop/kbis/code/images/cat.jpg",
+      src: "/statics/images/cat.jpg",
       $events: {
         load: function OnLoad(e, This) {
           setStyle(This, "image2", { display: "block" });
@@ -286,7 +286,7 @@ function TopicsLink() {
       },
     },
     image3: {
-      src: "C:/Users/Winfred/Desktop/kbis/code/images/lady.jpg",
+      src: "/statics/images/lady.jpg",
       $events: {
         load: function OnLoad(e, This) {
           setStyle(This, "image3", { display: "block" });
