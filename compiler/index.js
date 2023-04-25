@@ -23,6 +23,34 @@ var basedir = __dirname.split("compiler");
 basedir.pop();
 basedir = basedir.join("");
 const srcDir = path.join(basedir, "src");
+var required_dir = path.join(srcDir, "/module");
+var required_dir_exist = fs.existsSync(required_dir);
+if (!required_dir_exist) {
+  //Do not handle possible errors to alert something is wrong
+  fs.mkdirSync(required_dir);
+}
+required_dir = path.join(srcDir, "/ssr");
+required_dir_exist = fs.existsSync(required_dir);
+if (!required_dir_exist) {
+  //Do not handle possible errors to alert something is wrong
+  fs.mkdirSync(required_dir);
+  fs.mkdirSync(path.join(required_dir, "/module"));
+  fs.mkdirSync(path.join(required_dir, "/inline_modules"));
+} else {
+  required_dir = path.join(required_dir, "/module");
+  required_dir_exist = fs.existsSync(required_dir);
+  if (!required_dir_exist) {
+    //Do not handle possible errors to alert something is wrong
+    fs.mkdirSync(required_dir);
+  }
+  required_dir = path.join(srcDir, "/ssr/inline_modules");
+  required_dir_exist = fs.existsSync(required_dir);
+  if (!required_dir_exist) {
+    //Do not handle possible errors to alert something is wrong
+    fs.mkdirSync(required_dir);
+  }
+}
+
 watcherSettings({ srcDir: srcDir });
 jServe.srcDir(srcDir);
 jServe.is_dev();
