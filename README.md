@@ -7,7 +7,7 @@ The next social platform created with breakerJS
 - Clone this repo
 - Change directory `cd thenext`
 - Start app `npm run dev`
-- visit [localhost](http://localhost:3003) on port `3003`
+- visit [localhost](http://localhost:30003) on port `30003`
 
 ### Contribution
 
