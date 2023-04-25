@@ -6,6 +6,7 @@ const http = require("http");
 const url = require("url");
 const fs = require("fs");
 const path = require("path");
+const colors = require("./lib/colors");
 const compiler = require("./compiler");
 //Prefix app.css classnames with `jsh-`
 compiler.prefix("jsh");
@@ -265,6 +266,22 @@ const server = http.createServer(function (req, res) {
   );
 });
 
-server.listen(3003, function () {
-  console.log("Breaker Running...");
+const PORT = 30003;
+server.listen(PORT, function () {
+  console.log(
+    `${colors.text("🔨").blueColor().get()}  ${colors
+      .text(`Breaker Running on port ${PORT}`)
+      .bold()
+      .whiteColor()
+      .get()}`
+  );
+  console.log(
+    `${colors.text("🔨").blueColor().get()}  ${colors
+      .text(
+        `Visit ${colors.text(`http://localhost:${PORT}`).greyColor().get()}`
+      )
+      .bold()
+      .whiteColor()
+      .get()}`
+  );
 });

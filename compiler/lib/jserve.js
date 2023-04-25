@@ -1111,7 +1111,6 @@ var jserve = (module.exports = {
    *
    */
   render: function (param0) {
-    console.log(param0);
     var { htmlEntryPath, jsEntryPath, pageData, insertable, callback } = param0;
     const ssr = !!param0.ssr;
     var renderId = Object.defineProperty({}, symbol, {
@@ -1127,7 +1126,6 @@ var jserve = (module.exports = {
       insertable = {};
     }
     const compiled_htmlEntryPath = htmlEntryPath + ".ssr.js";
-    console.log([compiled_htmlEntryPath]);
     if (jserve.dev) {
       mark();
     }
