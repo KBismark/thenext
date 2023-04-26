@@ -133,17 +133,30 @@ function buildScripts(filename) {
   var pathname = filename.replace(srcDirConst, "");
   //Log compile start time
   console.log(
-    `${colors.text(">>").yellowColor().get()}  ${colors
+    `\n${colors.text(">>").yellowColor().get()}  ${colors
       .text("Compile")
       .blueColor()
       .get()} [${colors.text(pathname).greenColor().get()}]`
   );
-
   try {
     var fileContent = fs.readFileSync(filename, "utf8");
-    fileContent = compiler.translate(
-      fileContent.replace(/\/\/<(.*?)\/\/>/gs, "")
-    );
+  } catch (error) {
+    if (
+      error.code == "ENOENT" &&
+      error.path.startsWith(path.join(srcDir, "/scripts"))
+    ) {
+      var f = error.path.replace(path.join(srcDir, "/scripts"), "");
+      remove(path.join(srcDir, "/module", f));
+      remove(path.join(srcDir, "/ssr/module", f));
+      remove(path.join(srcDir, "/ssr/inline_modules", f));
+    }
+    return;
+  }
+  fileContent = compiler.translate(
+    fileContent.replace(/\/\/<(.*?)\/\/>/gs, "")
+  );
+
+  try {
     // fs.writeFileSync(path.join(staticDir,"/css/app.css"),appCSSMessage+compiler.getStyleSheet());
     var file = filename.replace(path.join(srcDir, "/scripts"), "");
     var slash = path.join("/");
