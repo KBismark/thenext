@@ -269,7 +269,7 @@ const server = http.createServer(function (req, res) {
 const PORT = 30003;
 server.listen(PORT, function () {
   console.log(
-    `${colors.text("🔨").blueColor().get()}  ${colors
+    `\n${colors.text("🔨").blueColor().get()}  ${colors
       .text(`Breaker Running on port ${PORT}`)
       .bold()
       .whiteColor()
