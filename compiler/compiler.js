@@ -4,7 +4,8 @@ var markupPattern =
     /([a-zA-Z()[\]#][a-zA-Z0-9-_:()[\]#]*)(?:\s*=\s*((?:'[^']*')|(?:"[^"]*")|\S+))?/gi,
   templatePattern =
     /<>\s*{(\S|\s)*?(?!(?:'[^']*')|(?:"[^"]*")|(?:`[^`]*`))\s*}\s*<\/>/g,
-  festPattern = /<view>(\S|\s)*?<\/view>/g;
+  festPattern = /<view>(\S|\s)*?<\/view>/g,
+  themePattern = /\/\/<theme>(.*?)\/\/<\/theme>/gs;
 /**
  *
  * @param {string} text
@@ -46,6 +47,13 @@ function getAttributes(html) {
  */
 function getFestComponents(html) {
   return html.match(festPattern);
+}
+/**
+ *
+ * @param {string} html
+ */
+function getThemes(html) {
+  return html.match(themePattern);
 }
 /**
  *
@@ -705,7 +713,70 @@ function getStyleSheet() {
 /**
  * @param {string} html
  */
+function translateThemes(html) {
+  var themes = getThemes(html),
+    parsedTheme = "",
+    head;
+  if (themes) {
+    for (var i = 0; i < themes.length; i++) {
+      parsedTheme = parseTheme(themes[i]);
+      head = ("\n" + themes[i]).match(/\n(.*?)createTheme\s*\(\s*\S+\s*,/gs)[0];
+      head = head.replace(/\/\/<theme>(.*?)\n/gs, "");
+      console.log(head);
+      html = html.replace(themes[i], head + parsedTheme + ");");
+    }
+  }
+  return html;
+}
+/**
+ *
+ * @param {string} theme
+ */
+function parseTheme(theme) {
+  theme = "\n" + theme + "\n";
+  theme = theme.replace(/\n(.*?)createTheme\s*\(\s*\S+\s*,/gs, "");
+  theme = theme.replace(/(\/\/<\/theme>(.*?)\s*\n)$/, "");
+  theme = (theme + "\n").replace(/(\)(.*?)\s*\n)$/, "");
+  return convertTheme(theme);
+}
+function convertTheme(theme) {
+  var themeObj;
+  try {
+    themeObj = new Function("return (" + theme + ")");
+    themeObj = themeObj();
+    if (typeof themeObj != "object" || null == themeObj) {
+      throw new Error("");
+    }
+  } catch (error) {
+    //Error message here
+    throw error;
+  }
+  var classNames = Object.keys(themeObj);
+  var style = "",
+    classname;
+  var styleRules, rulesKey, key;
+  for (var i = 0; i < classNames.length; i++) {
+    classname = classNames[i];
+    style = `${style}.${classname}{`;
+    styleRules = themeObj[classname];
+    rulesKey = Object.keys(styleRules);
+    for (j = 0; j < rulesKey.length; j++) {
+      key = rulesKey[j];
+      style = `${style}${key
+        .replace(/[A-Z]/g, "-$&")
+        .toLowerCase()}:\${${JSON.stringify(styleRules[key])}[t]};`;
+    }
+    style += "}";
+  }
+  var styleSheet = `function(t){return \`${style}\`}`;
+  console.log(styleSheet);
+  return styleSheet;
+}
+/**
+ * @param {string} html
+ */
 function translate(html) {
+  html = translateThemes(html);
   var fests = getFestComponents(html),
     i;
   var compiledFests = null;
