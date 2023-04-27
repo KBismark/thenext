@@ -248,12 +248,13 @@ function toDistinctObject(array) {
  * @param {{tag:string,attr:{},children:[]}} node
  * @param {{value:string}} valueObj
  */
-function buildString(node, isSVGNamespaceElement) {
+function buildString(node, isSVGNamespaceElement, depth) {
   var s1 = "",
     s2 = "";
   if (node.head) {
     s1 = "function(t){var th = t.elements || {};return ";
     s2 = "}(this,Breaker.ui.run(this))";
+    depth = [];
   }
   var isKeyed = typeof node.attr.key == "string" && node.attr.key.length;
   isSVGNamespaceElement =
@@ -343,14 +344,15 @@ function buildString(node, isSVGNamespaceElement) {
         if (node.children[i].JS) {
           nodeString = nodeString.replace(
             child_Rep,
-            `${node.children[i].value},${child_Rep}`
+            `[${node.children[i].value},${JSON.stringify([...depth,i])}],${child_Rep}`
           );
         } else {
           nodeString = nodeString.replace(
             child_Rep,
             `${buildString(
               node.children[i],
-              isSVGNamespaceElement
+              isSVGNamespaceElement,
+              [...depth,i]
             )},${child_Rep}`
           );
         }
@@ -722,7 +724,6 @@ function translateThemes(html) {
       parsedTheme = parseTheme(themes[i]);
       head = ("\n" + themes[i]).match(/\n(.*?)createTheme\s*\(\s*\S+\s*,/gs)[0];
       head = head.replace(/\/\/<theme>(.*?)\n/gs, "");
-      console.log(head);
       html = html.replace(themes[i], head + parsedTheme + ");");
     }
   }
@@ -769,7 +770,6 @@ function convertTheme(theme) {
     style += "}";
   }
   var styleSheet = `function(t){return \`${style}\`}`;
-  console.log(styleSheet);
   return styleSheet;
 }
 /**
