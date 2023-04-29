@@ -799,6 +799,7 @@
       class: componentType,
       instance: [],
       fn: fn,
+      value: null,
     };
     const componentFunctionClass = functionClass.bind({
       classType: componentType,
@@ -1731,12 +1732,6 @@
   function setElementAttributes(element, attr) {
     const keyHolder = Object.keys(attr);
     const methods = {};
-    //   var index = keyHolder.indexOf("style");
-    //   keyHolder.splice(index, 1);
-    //   index = keyHolder.indexOf("class");
-    //   keyHolder.splice(index, 1);
-    //   index = keyHolder.indexOf("$events");
-    //   keyHolder.splice(index, 1);
     var i = 0,
       value;
     while (i < keyHolder.length) {
@@ -1756,153 +1751,116 @@
     return methods;
   }
 
+  function setElementStringAttributes(element, attr) {
+    const keyHolder = Object.keys(attr);
+    const methods = {};
+    var i = 0,
+      key,
+      l = keyHolder.length;
+    while (i < l) {
+      key = keyHolder[i];
+      element.setAttribute(key, attr[key]);
+      i++;
+    }
+  }
+
   //Creates static elements of views
   function createElement(
     tagName,
     htmlAttributes,
-    jsAttributes,
     children,
     componentObject,
-    useSVGNamespace
+    isHead,
+    useSVGNamespace,
+    nodePosition
   ) {
     const componentObject_Internal = componentObject[symbolIdentifier];
     const componentId = componentObject_Internal.id;
-
+    var classNames = { value: null },
+      styleValue = {};
+    var keyname;
     htmlAttributes = htmlAttributes || {};
-    jsAttributes = jsAttributes || {};
+    var keyedNodes = {};
+    //jsAttributes = jsAttributes || {};
 
     function assignAttributes() {
-      /*   ||Merge node attributes||    */
-
-      //Join class names form HTML and JS
-      var htmlClassNames = htmlAttributes.class || {};
-      classNames = jsAttributes.class || "";
-      if (classNames.length) {
-        classNames = {
-          ...htmlClassNames,
-          ...toDistinctObject(classNames.split(" ")),
+      if (isKeyed) {
+        keyname = htmlAttributes.key;
+        if (htmlAttributes.class) {
+          //Hold the object value of the class attribute
+          classNames = htmlAttributes.class;
+          //Reset the class attribute to its raw value
+          //htmlAttributes.class = htmlAttributes.class.raw;
+        }
+        if (htmlAttributes.style) {
+          //Hold the object value of the style attribute
+          styleValue = htmlAttributes.style.value;
+          //Reset the style attribute to its raw value
+          htmlAttributes.style = htmlAttributes.style.raw;
+        }
+        htmlAttributes.key = "";
+        delete htmlAttributes.key;
+        setElementStringAttributes(element, htmlAttributes);
+        htmlAttributes.style = htmlAttributes.class = null;
+        delete htmlAttributes.style;
+        delete htmlAttributes.class;
+        keyedNodes[keyname] = {
+          //element,
+          classNames,
+          styleValue,
+          htmlAttributes,
+          position: nodePosition,
         };
       } else {
-        classNames = {
-          ...htmlClassNames,
-        };
+        setElementStringAttributes(element, htmlAttributes);
       }
-
-      //Join styles form HTML and JS
-      styles = {
-        ...(htmlAttributes.style || {}),
-        ...(jsAttributes.style || {}),
-      };
-
-      attributes = {
-        ...htmlAttributes,
-        ...jsAttributes,
-      };
-      attributes.class = null;
-      delete attributes.class;
-      attributes.style = null;
-      delete attributes.style;
-      attributes.$events = null;
-      delete attributes.$events;
-      //Attach event listeners if exists.
-      events = jsAttributes.$events || {};
-      eventCallers = attachEvents(element, events, {
-        componentId: componentId,
-        key: htmlAttributes.key,
-      });
-      setMethods = setElementAttributes(element, attributes);
     }
-    //Check if element is keyed
-    //Keyed elements can be accessed later for updates;
-    var isKeyed =
-      typeof htmlAttributes.key == "string" && htmlAttributes.key.length;
-    var keyedEls = componentObject_Internal.keyedElements;
-
-    if (isKeyed) {
-      //Since `keyedElements` is defined, The component had already been created
-      //and needs a re-mounting/re-rendering
-      if (keyedEls && keyedEls[htmlAttributes.key]) {
-        //Since the attributs of this element exists, we reuse.
-        var key = htmlAttributes.key;
-        var classNames = keyedEls[key].classNames;
-        var styles = keyedEls[key].styles;
-        var attributes = keyedEls[key].attributes;
-        var events = keyedEls[key].events;
-        var element = useSVGNamespace
-          ? document.createElementNS("http://www.w3.org/2000/svg", tagName)
-          : document.createElement(tagName);
-        var eventCallers = attachEvents(element, events, {
-          componentId: componentId,
-          key: key,
-        });
-        var setMethods = setElementAttributes(element, attributes);
-        keyedEls[htmlAttributes.key] = {
-          attributes,
-          classNames,
-          styles,
-          events, //Object containing the actual event listeners set by developer
-          eventCallers, //Object containing all attached events via addEventListener
-          setMethods, //Object containing all method names set on element
-          element,
-        };
-      } else {
-        componentObject_Internal.keyedElements = keyedEls || {};
-        //Component head node does not exist either because it was destroyed or it's not created at all
-        element =
-          //tagName.toLowerCase() == "svg"
-          useSVGNamespace
-            ? document.createElementNS("http://www.w3.org/2000/svg", tagName)
-            : document.createElement(tagName);
-
-        assignAttributes();
-
-        keyedEls[htmlAttributes.key] = {
-          attributes,
-          classNames,
-          styles,
-          events, //Object containing the actual event listeners set by developer
-          eventCallers, //Object containing all attached events via addEventListener
-          setMethods, //Object containing all method names set on element
-          element,
-        };
-      }
-    } else {
-      element = useSVGNamespace
-        ? document.createElementNS("http://www.w3.org/2000/svg", tagName)
-        : document.createElement(tagName);
-      assignAttributes();
-    }
-    /*    ||Set attributes on element||       */
-    element.setAttribute("class", Object.keys(classNames).join(" "));
-    setStyleAttributes(element, styles);
+    var isKeyed = !!nodePosition;
+    element = useSVGNamespace
+      ? document.createElementNS("http://www.w3.org/2000/svg", tagName)
+      : document.createElement(tagName);
+    assignAttributes();
 
     var dynamicNodes = [];
     var i = 0,
-      dynamicNode;
-    while (i < children.length) {
-      switch (typeof children[i]) {
-        case "function": //Dynamic node: This node may change later in the UI
-          dynamicNode = getDynamicNodeValue(children[i], {
-            ownerComponentId: componentId,
-            parentDNodeIndex: dynamicNodes.length,
-          });
-          switch (dynamicNode.type) {
-            case NODETYPES.COMPONENT:
-              element.appendChild(
-                states[dynamicNode.value][symbolIdentifier].domNode
-              );
-              //Set the parent component on chhild
-              //This creates the connection to allow `getParentComponentRef()`
-              //states[dynamicNode.value][symbolIdentifier].parent = componentId;
-              break;
+      dynamicNode,
+      dynamicNodeMethod,
+      dynamicNodePosition,
+      dynamicNodeReplacer;
+    var actualNode,
+      l = children.length;
+    while (i < l) {
+      switch (Array.isArray(children[i])) {
+        case true: //Dynamic node: This node may change later in the UI
+          [dynamicNodeMethod, dynamicNodePosition] = children[i];
+          // dynamicNode = getDynamicNodeValue(dynamicNodeMethod, {
+          //   ownerComponentId: componentId,
+          //   parentDNodeIndex: dynamicNodes.length,
+          // });
+          // switch (dynamicNode.type) {
+          //   case NODETYPES.COMPONENT:
+          //     actualNode = states[dynamicNode.value][symbolIdentifier].domNode;
+          //     //Set the parent component on chhild
+          //     //This creates the connection to allow `getParentComponentRef()`
+          //     //states[dynamicNode.value][symbolIdentifier].parent = componentId;
+          //     break;
 
-            default:
-              element.appendChild(dynamicNode.node);
-              if (dynamicNode.type == NODETYPES.LIST) {
-                dynamicNode.node = null;
-              }
-              break;
-          }
+          //   default:
+          //     actualNode = dynamicNode.node;
+          //     if (dynamicNode.type == NODETYPES.LIST) {
+          //       dynamicNode.node = null;
+          //     }
+          //     break;
+          // }
+          dynamicNodeReplacer = document.createTextNode("");
+          element.appendChild(dynamicNodeReplacer);
+          dynamicNode = {
+            //actualNode: actualNode,
+           // replacerNode: dynamicNodeReplacer,
+            position: dynamicNodePosition,
+            method: dynamicNodeMethod,
+            index: dynamicNodes.length,
+          };
           dynamicNodes.push(dynamicNode);
           break;
 
@@ -1910,7 +1868,11 @@
           switch (children[i].type) {
             case NODETYPES.STATIC_ELEMENT: //Static node: Elements
               element.appendChild(children[i].element);
-
+              //Join keyed nodes from this child element
+              keyedNodes = {
+                ...keyedNodes,
+                ...children[i].keyedNodes,
+              };
               //Join dynamic children of this child element to parent's dynamic nodes
               dynamicNodes = dynamicNodes.concat(children[i].dynamicNodes);
               break;
@@ -1924,12 +1886,343 @@
       i++;
     }
 
+    if (isHead) {
+      const { classType } = componentObject_Internal;
+      componentTypes[classType].value = {
+        element: element,//.cloneNode(true),
+        keyedNodes:keyedNodes,
+      };
+
+      //If the `elements` object was set on componentObject,
+      //we set dynamic attributes of keyed elements
+      // const keyedElementsObj = componentObject.elements || {};
+      // var keyHolder = Object.keys(keyedNodes);
+      // var keyedvalue,
+      //   l = keyHolder.length;
+      // var keyedEls = componentObject_Internal.keyedElements;
+      // if (keyedEls) {
+      //   for (i = 0; i < l; i++) {
+      //     keyname = keyHolder[i];
+      //     keyedvalue = keyedEls[keyname];
+      //     if (keyedvalue) {
+      //       dynamicAttributeSetter(
+      //         {
+      //           keyedEls,
+      //           keyname: keyname,
+      //           jsAttributes: null,
+      //           keyedvalue: keyedNodes[keyname],
+      //           element: keyedNodes[keyname].element,
+      //           componentId: componentId,
+      //         },
+      //         [
+      //           keyedvalue.styles,
+      //           keyedvalue.classNames,
+      //           keyedvalue.attributes,
+      //           keyedvalue.events,
+      //           keyedvalue.eventCallers,
+      //           keyedvalue.setMethods,
+      //         ],
+      //         true
+      //       );
+      //     } else {
+      //       dynamicAttributeSetter(
+      //         {
+      //           keyedEls,
+      //           keyname: keyname,
+      //           jsAttributes: keyedElementsObj[keyname],
+      //           keyedvalue: keyedNodes[keyname],
+      //           element: keyedNodes[keyname].element,
+      //           componentId: componentId,
+      //         },
+      //         [{}, {}, {}, {}, {}, {}]
+      //       );
+      //     }
+      //     keyedNodes[keyname].element = null;
+      //   }
+      // } else {
+      //   keyedEls = componentObject_Internal.keyedElements = {};
+      //   for (i = 0; i < l; i++) {
+      //     keyname = keyHolder[i];
+      //     dynamicAttributeSetter(
+      //       {
+      //         keyedEls,
+      //         keyname: keyname,
+      //         jsAttributes: keyedElementsObj[keyname],
+      //         keyedvalue: keyedNodes[keyname],
+      //         element: keyedNodes[keyname].element,
+      //         componentId: componentId,
+      //       },
+      //       [{}, {}, {}, {}, {}, {}]
+      //     );
+      //     keyedNodes[keyname].element = null;
+      //   }
+      // }
+      // keyedNodes = null;
+
+      l = dynamicNodes.length;
+      //console.log(dynamicNodes);
+      //debugger;
+      var cachedDynamicNodes = new Array(l);
+      //var mainDynamicNodes = new Array(l);
+      var dynamicInfo;
+      for (i = 0; i < l; i++) {
+        dynamicInfo = dynamicNodes[i]; //
+        // dynamicNode = getDynamicNodeValue(dynamicInfo.method, {
+        //   ownerComponentId: componentId,
+        //   parentDNodeIndex: dynamicInfo.index,
+        // });
+        // switch (dynamicNode.type) {
+        //   case NODETYPES.COMPONENT:
+        //     dynamicInfo.replacerNode.replaceWith(states[dynamicNode.value][symbolIdentifier].domNode)
+        //    // actualNode = states[dynamicNode.value][symbolIdentifier].domNode;
+        //     //Set the parent component on chhild
+        //     //This creates the connection to allow `getParentComponentRef()`
+        //     //states[dynamicNode.value][symbolIdentifier].parent = componentId;
+        //     break;
+
+        //   default:
+        //     //actualNode = dynamicNode.node;
+        //     dynamicInfo.replacerNode.replaceWith(dynamicNode.node)
+        //     if (dynamicNode.type == NODETYPES.LIST) {
+        //       dynamicNode.node = null;
+        //     }
+        //     break;
+        // }
+        //mainDynamicNodes[i]=dynamicNode;
+        //console.log(dynamicNode.pos.actualNode.parentNode);
+        //dynamicNode.pos.replacerNode.replaceWith(dynamicNode.pos.actualNode);
+        cachedDynamicNodes[i]={
+          position: dynamicInfo.position,
+          method: dynamicInfo.method,
+          index:dynamicInfo.index
+        };
+        //dynamicNode.pos = null;
+      }
+      componentTypes[classType].value.dynamicNodes = cachedDynamicNodes;
+      //dynamicNodes = mainDynamicNodes;
+      return cloneView(componentObject);
+    }
+
     return {
       type: NODETYPES.STATIC_ELEMENT,
-      isKeyed: isKeyed,
       key: htmlAttributes.key,
+      isKeyed,
+      element,
+      dynamicNodes,
+      keyedNodes,
+    };
+  }
+
+  //
+  function cloneView(componentObject) {
+    const componentObject_Internal = componentObject[symbolIdentifier];
+    const classType = componentObject_Internal.classType;
+    if (!componentTypes[classType].value) return;
+    const componentId = componentObject_Internal.id;
+    var { dynamicNodes, element } = componentTypes[classType].value;
+    element = element.cloneNode(true);
+    setDynamicAttributes(element, componentId);
+    var l = dynamicNodes.length,
+      i,
+      dynamicNode;
+    var mainDynamicnodes = [];
+    var pairs = [];
+    for (i = 0; i < l; i++) {
+      const { method, index, position } = dynamicNodes[i];
+      dynamicNode = getDynamicNodeValue(method, {
+        ownerComponentId: componentId,
+        parentDNodeIndex: index,
+      });
+      switch (dynamicNode.type) {
+        case NODETYPES.COMPONENT:
+          pairs.push([
+            findElementNode(element, position),
+            states[dynamicNode.value][symbolIdentifier].domNode,
+          ]);
+          break;
+
+        default:
+          pairs.push([findElementNode(element, position), dynamicNode.node]);
+          if (dynamicNode.type == NODETYPES.LIST) {
+            dynamicNode.node = null;
+          }
+          break;
+      }
+      mainDynamicnodes.push(dynamicNode);
+    }
+    var replacer, actualNode;
+    for ([replacer, actualNode] of pairs) {
+      replacer.replaceWith(actualNode);
+    }
+
+    return {
       element: element,
-      dynamicNodes: dynamicNodes,
+      dynamicNodes: mainDynamicnodes,
+    };
+  }
+  //Traverses an element to find nested element
+  function findElementNode(head, position) {
+    var i = 0,
+      l = position.length;
+    while (i < l) {
+      head = head.childNodes[position[i]];
+      i++;
+    }
+    return head;
+  }
+
+  function setDynamicAttributes(element, componentId) {
+    const componentObject = states[componentId];
+    const componentObject_Internal = componentObject[symbolIdentifier];
+    const { keyedNodes } =
+      componentTypes[componentObject_Internal.classType].value;
+    const keyedElementsObj = componentObject.elements || {};
+    var keyHolder = Object.keys(keyedNodes);
+    var keyedvalue,
+      l = keyHolder.length;
+    var keyname;
+    var keyedEls = componentObject_Internal.keyedElements;
+    if (keyedEls) {
+      for (i = 0; i < l; i++) {
+        keyname = keyHolder[i];
+        keyedvalue = keyedEls[keyname];
+        if (keyedvalue) {
+          dynamicAttributeSetter(
+            {
+              keyedEls,
+              keyname: keyname,
+              jsAttributes: null,
+              keyedvalue: keyedNodes[keyname],
+              element: findElementNode(element, keyedNodes[keyname].position),
+              componentId: componentId,
+            },
+            [
+              keyedvalue.styles,
+              keyedvalue.classNames,
+              keyedvalue.attributes,
+              keyedvalue.events,
+              keyedvalue.eventCallers,
+              keyedvalue.setMethods,
+            ],
+            true
+          );
+        } else {
+          dynamicAttributeSetter(
+            {
+              keyedEls,
+              keyname: keyname,
+              jsAttributes: keyedElementsObj[keyname],
+              keyedvalue: keyedNodes[keyname],
+              element: findElementNode(element, keyedNodes[keyname].position),
+              componentId: componentId,
+            },
+            [{}, {}, {}, {}, {}, {}]
+          );
+        }
+      }
+    } else {
+      keyedEls = componentObject_Internal.keyedElements = {};
+      for (i = 0; i < l; i++) {
+        keyname = keyHolder[i];
+        jsAttributes = keyedElementsObj[keyname];
+        dynamicAttributeSetter(
+          {
+            keyedEls,
+            keyname: keyname,
+            jsAttributes: keyedElementsObj[keyname],
+            keyedvalue: keyedNodes[keyname],
+            element: findElementNode(element, keyedNodes[keyname].position),
+            componentId: componentId,
+          },
+          [{}, {}, {}, {}, {}, {}]
+        );
+      }
+    }
+  }
+
+  function dynamicAttributeSetter(
+    { keyedEls, keyname, jsAttributes, keyedvalue, element, componentId },
+    [styles, classNames, attributes, events, eventCallers, setMethods],
+    reuse
+  ) {
+    if (reuse) {
+      setStyleAttributes(element, styles);
+      var clsnme = Object.keys(classNames);
+      if (clsnme.length) {
+        element.setAttribute("class", clsnme.join(" "));
+      }
+      eventCallers = attachEvents(element, events, {
+        componentId: componentId,
+        key: keyname,
+      });
+      setMethods = setElementAttributes(element, attributes);
+    }
+    
+    //If keyed Attributes were cleared or not set,
+    //Create from dynamic attributes and attributes from views
+    else {
+      jsAttributes = jsAttributes || {};
+      if (jsAttributes.style) {
+        setStyleAttributes(element, jsAttributes.style);
+        styles = {
+          ...keyedvalue.styleValue,
+          ...jsAttributes.style,
+        };
+      } else {
+        styles = keyedvalue.styleValue;
+      }
+
+      //Class attribute was set on keyed element in component view
+      if (keyedvalue.classNames.value) {
+        //Class attribute was also set dynamically
+        //We join classnames
+        if ((jsAttributes.class || "").length) {
+          classNames = {
+            ...keyedvalue.classNames.value,
+            ...toDistinctObject(jsAttributes.class.split(" ")),
+          };
+          jsAttributes.class = [
+            keyedvalue.classNames.raw,
+            jsAttributes.class,
+          ].join(" ");
+          //keyedvalue.element.setAttribute("class",)
+        } else {
+          classNames = keyedvalue.classNames.value;
+          jsAttributes.class = keyedvalue.classNames.raw;
+        }
+      }
+      //Class attribute was not set on keyed element in component view
+      else {
+        //Class attribute was also set dynamically
+        if ((jsAttributes.class || "").length) {
+          classNames = toDistinctObject(jsAttributes.class.split(" "));
+        }
+      }
+
+      //Attach event listeners if exists.
+      events = jsAttributes.$events || {};
+      eventCallers = attachEvents(element, events, {
+        componentId: componentId,
+        key: keyname,
+      });
+      jsAttributes.$events = null;
+      delete jsAttributes.$events;
+      jsAttributes.style = null;
+      delete jsAttributes.style;
+      attributes = jsAttributes;
+      setMethods = setElementAttributes(element, attributes);
+      attributes.class = null;
+      delete attributes.class;
+    }
+
+    keyedEls[keyname] = {
+      attributes,
+      classNames,
+      styles,
+      events, //Object containing the actual event listeners set by developer
+      eventCallers, //Object containing all attached events via addEventListener
+      setMethods, //Object containing all method names set on element
+      element: element,
     };
   }
 
@@ -2843,6 +3136,7 @@
 
   function Run(This) {
     runComponentMethods(This[symbolIdentifier].id);
+    return This;
   }
 
   function destroyComponent(componentId, destructionHead) {
@@ -2984,5 +3278,6 @@
   Breaker.ui.run = Run;
   Breaker.createText = createText;
   Breaker.createElement = createElement;
+  Breaker.cloneView = cloneView;
   console.log(states);
 })();
