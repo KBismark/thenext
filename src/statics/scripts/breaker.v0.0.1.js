@@ -333,6 +333,7 @@
     renderCycle.states = {};
     renderCycle.sharedStates = {};
     renderCycle.unwantedComponents = [];
+    clearClonableViews();
     if (standAloneApps[symbolIdentifier].visitedPages[page]) {
       var pageRerenderRegisteredComponents = Object.keys(
         standAloneApps[symbolIdentifier].onNewPage[page]
@@ -1484,6 +1485,7 @@
           states[ref[symbolIdentifier].id][symbolIdentifier].domNode
         );
       }
+      clearClonableViews();
     }
   }
   window.addEventListener(
@@ -1827,36 +1829,14 @@
       dynamicNodeMethod,
       dynamicNodePosition,
       dynamicNodeReplacer;
-    var actualNode,
       l = children.length;
     while (i < l) {
       switch (Array.isArray(children[i])) {
         case true: //Dynamic node: This node may change later in the UI
           [dynamicNodeMethod, dynamicNodePosition] = children[i];
-          // dynamicNode = getDynamicNodeValue(dynamicNodeMethod, {
-          //   ownerComponentId: componentId,
-          //   parentDNodeIndex: dynamicNodes.length,
-          // });
-          // switch (dynamicNode.type) {
-          //   case NODETYPES.COMPONENT:
-          //     actualNode = states[dynamicNode.value][symbolIdentifier].domNode;
-          //     //Set the parent component on chhild
-          //     //This creates the connection to allow `getParentComponentRef()`
-          //     //states[dynamicNode.value][symbolIdentifier].parent = componentId;
-          //     break;
-
-          //   default:
-          //     actualNode = dynamicNode.node;
-          //     if (dynamicNode.type == NODETYPES.LIST) {
-          //       dynamicNode.node = null;
-          //     }
-          //     break;
-          // }
           dynamicNodeReplacer = document.createTextNode("");
           element.appendChild(dynamicNodeReplacer);
           dynamicNode = {
-            //actualNode: actualNode,
-           // replacerNode: dynamicNodeReplacer,
             position: dynamicNodePosition,
             method: dynamicNodeMethod,
             index: dynamicNodes.length,
@@ -1892,128 +1872,32 @@
         element: element,//.cloneNode(true),
         keyedNodes:keyedNodes,
       };
-
-      //If the `elements` object was set on componentObject,
-      //we set dynamic attributes of keyed elements
-      // const keyedElementsObj = componentObject.elements || {};
-      // var keyHolder = Object.keys(keyedNodes);
-      // var keyedvalue,
-      //   l = keyHolder.length;
-      // var keyedEls = componentObject_Internal.keyedElements;
-      // if (keyedEls) {
-      //   for (i = 0; i < l; i++) {
-      //     keyname = keyHolder[i];
-      //     keyedvalue = keyedEls[keyname];
-      //     if (keyedvalue) {
-      //       dynamicAttributeSetter(
-      //         {
-      //           keyedEls,
-      //           keyname: keyname,
-      //           jsAttributes: null,
-      //           keyedvalue: keyedNodes[keyname],
-      //           element: keyedNodes[keyname].element,
-      //           componentId: componentId,
-      //         },
-      //         [
-      //           keyedvalue.styles,
-      //           keyedvalue.classNames,
-      //           keyedvalue.attributes,
-      //           keyedvalue.events,
-      //           keyedvalue.eventCallers,
-      //           keyedvalue.setMethods,
-      //         ],
-      //         true
-      //       );
-      //     } else {
-      //       dynamicAttributeSetter(
-      //         {
-      //           keyedEls,
-      //           keyname: keyname,
-      //           jsAttributes: keyedElementsObj[keyname],
-      //           keyedvalue: keyedNodes[keyname],
-      //           element: keyedNodes[keyname].element,
-      //           componentId: componentId,
-      //         },
-      //         [{}, {}, {}, {}, {}, {}]
-      //       );
-      //     }
-      //     keyedNodes[keyname].element = null;
-      //   }
-      // } else {
-      //   keyedEls = componentObject_Internal.keyedElements = {};
-      //   for (i = 0; i < l; i++) {
-      //     keyname = keyHolder[i];
-      //     dynamicAttributeSetter(
-      //       {
-      //         keyedEls,
-      //         keyname: keyname,
-      //         jsAttributes: keyedElementsObj[keyname],
-      //         keyedvalue: keyedNodes[keyname],
-      //         element: keyedNodes[keyname].element,
-      //         componentId: componentId,
-      //       },
-      //       [{}, {}, {}, {}, {}, {}]
-      //     );
-      //     keyedNodes[keyname].element = null;
-      //   }
-      // }
-      // keyedNodes = null;
-
       l = dynamicNodes.length;
-      //console.log(dynamicNodes);
-      //debugger;
       var cachedDynamicNodes = new Array(l);
-      //var mainDynamicNodes = new Array(l);
       var dynamicInfo;
       for (i = 0; i < l; i++) {
         dynamicInfo = dynamicNodes[i]; //
-        // dynamicNode = getDynamicNodeValue(dynamicInfo.method, {
-        //   ownerComponentId: componentId,
-        //   parentDNodeIndex: dynamicInfo.index,
-        // });
-        // switch (dynamicNode.type) {
-        //   case NODETYPES.COMPONENT:
-        //     dynamicInfo.replacerNode.replaceWith(states[dynamicNode.value][symbolIdentifier].domNode)
-        //    // actualNode = states[dynamicNode.value][symbolIdentifier].domNode;
-        //     //Set the parent component on chhild
-        //     //This creates the connection to allow `getParentComponentRef()`
-        //     //states[dynamicNode.value][symbolIdentifier].parent = componentId;
-        //     break;
-
-        //   default:
-        //     //actualNode = dynamicNode.node;
-        //     dynamicInfo.replacerNode.replaceWith(dynamicNode.node)
-        //     if (dynamicNode.type == NODETYPES.LIST) {
-        //       dynamicNode.node = null;
-        //     }
-        //     break;
-        // }
-        //mainDynamicNodes[i]=dynamicNode;
-        //console.log(dynamicNode.pos.actualNode.parentNode);
-        //dynamicNode.pos.replacerNode.replaceWith(dynamicNode.pos.actualNode);
         cachedDynamicNodes[i]={
           position: dynamicInfo.position,
           method: dynamicInfo.method,
           index:dynamicInfo.index
         };
-        //dynamicNode.pos = null;
       }
       componentTypes[classType].value.dynamicNodes = cachedDynamicNodes;
-      //dynamicNodes = mainDynamicNodes;
+      cloneContainer.push(classType);
       return cloneView(componentObject);
     }
 
     return {
       type: NODETYPES.STATIC_ELEMENT,
-      key: htmlAttributes.key,
-      isKeyed,
       element,
       dynamicNodes,
       keyedNodes,
     };
   }
 
-  //
+  var cloneContainer = [];
+  //Clones views of component
   function cloneView(componentObject) {
     const componentObject_Internal = componentObject[symbolIdentifier];
     const classType = componentObject_Internal.classType;
@@ -2060,6 +1944,7 @@
       dynamicNodes: mainDynamicnodes,
     };
   }
+
   //Traverses an element to find nested element
   function findElementNode(head, position) {
     var i = 0,
@@ -3273,6 +3158,14 @@
       destroyComponent(components[i]);
     }
     destroyComponent(head, true);
+  }
+  function clearClonableViews(){
+    var i = cloneContainer.length-1;
+    while(i>-1){
+      componentTypes[cloneContainer[i]].value = null;
+      i--;
+    }
+    cloneContainer=[];
   }
 
   Breaker.ui.run = Run;
