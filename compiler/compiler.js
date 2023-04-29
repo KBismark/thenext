@@ -252,8 +252,8 @@ function buildString(node, isSVGNamespaceElement, depth) {
   var s1 = "",
     s2 = "";
   if (node.head) {
-    s1 = "function(t){var th = t.elements || {};return ";
-    s2 = "}(this,Breaker.ui.run(this))";
+    s1 = "Breaker.cloneView(Breaker.ui.run(this))||";
+    s2 = "";
     depth = [];
   }
   var isKeyed = typeof node.attr.key == "string" && node.attr.key.length;
@@ -263,9 +263,9 @@ function buildString(node, isSVGNamespaceElement, depth) {
   var atrris = Object.keys(node.attr);
   var nodeString = `Breaker.createElement('${node.tag}',${
       atrris.length ? `{${attr_Rep}}` : "null"
-    },${isKeyed ? `th[${node.attr.key}]` : "null"},[${child_Rep}],t,${
-      isSVGNamespaceElement ? "true" : ""
-    })`,
+    },[${child_Rep}],this,${node.head ? "true" : "false"},${
+      isSVGNamespaceElement ? "true" : "false"
+    },${isKeyed ? JSON.stringify(depth) : ""})`,
     ch = false,
     at = false,
     i;
@@ -281,29 +281,38 @@ function buildString(node, isSVGNamespaceElement, depth) {
         .replace(/.$/, "")
         .replace('"', "")
         .trim();
-      if (node.attr.style[node.attr.style.length - 1] == ";") {
-        node.attr.style = node.attr.style.replace(/.$/, "");
-      }
-      var styles = node.attr.style.split(";");
-      var key, matched;
-      for (i = 0; i < styles.length; i++) {
-        styles[i] = styles[i].split(":");
-        if (styles[i].length !== 2) {
-          continue;
+      var styleString = node.attr.style;
+      if (isKeyed) {
+        if (node.attr.style[node.attr.style.length - 1] == ";") {
+          node.attr.style = node.attr.style.replace(/.$/, "");
         }
-        key = styles[i][0].match(/-[a-z]/g);
-        if (key) {
-          while (key.length > 0) {
-            matched = key.shift();
-            styles[i][0] = styles[i][0].replace(
-              matched,
-              matched[1].toUpperCase()
-            );
+        var styles = node.attr.style.split(";");
+        var key, matched;
+        for (i = 0; i < styles.length; i++) {
+          styles[i] = styles[i].split(":");
+          if (styles[i].length !== 2) {
+            continue;
           }
+          key = styles[i][0].match(/-[a-z]/g);
+          if (key) {
+            while (key.length > 0) {
+              matched = key.shift();
+              styles[i][0] = styles[i][0].replace(
+                matched,
+                matched[1].toUpperCase()
+              );
+            }
+          }
+          stylesObject[styles[i][0]] = styles[i][1].trim();
         }
-        stylesObject[styles[i][0]] = styles[i][1].trim();
+        node.attr.style = JSON.stringify({
+          raw: styleString,
+          value: stylesObject,
+        });
+      } else {
+        node.attr.style = `"${styleString}"`;
       }
-      node.attr.style = JSON.stringify(stylesObject);
+
       //itemIndex = atrris.indexOf("class");
       // if (itemIndex < 0) {
       //   atrris.push("class");
@@ -317,11 +326,17 @@ function buildString(node, isSVGNamespaceElement, depth) {
     }
     if (typeof node.attr.class == "string" && node.attr.class.length) {
       node.attr.class = node.attr.class.replace(/^./, "").replace(/.$/, "");
-      node.attr.class = JSON.stringify(
-        toDistinctObject(node.attr.class.split(" "))
-      );
+      var classString = Array.from(new Set(node.attr.class.split(" ")));
+      if (isKeyed) {
+        node.attr.class = JSON.stringify({
+          raw: classString.join(" "),
+          value: toDistinctObject(classString),
+        });
+      } else {
+        node.attr.class = `"${classString.join(" ")}"`;
+      }
     } else {
-      node.attr.class = {};
+      node.attr.class = isKeyed ? { value: null } : "";
       delete node.attr.class;
     }
     for (i = 0; i < atrris.length; i++) {
@@ -334,26 +349,32 @@ function buildString(node, isSVGNamespaceElement, depth) {
   nodeString = nodeString.replace(`${at ? "," : ""}${attr_Rep}`, "");
   if (node.children.length > 0) {
     ch = true;
+    var static_count = 0;
     for (i = 0; i < node.children.length; i++) {
       if (typeof node.children[i] === "string") {
+        //Text nodes
         nodeString = nodeString.replace(
           child_Rep,
           `Breaker.createText(${JSON.stringify(node.children[i])}),${child_Rep}`
         );
       } else {
+        //dynamic node
         if (node.children[i].JS) {
           nodeString = nodeString.replace(
             child_Rep,
-            `[${node.children[i].value},${JSON.stringify([...depth,i])}],${child_Rep}`
+            `[${node.children[i].value},${JSON.stringify([
+              ...depth,
+              i,
+            ])}],${child_Rep}`
           );
         } else {
+          //A static element
           nodeString = nodeString.replace(
             child_Rep,
-            `${buildString(
-              node.children[i],
-              isSVGNamespaceElement,
-              [...depth,i]
-            )},${child_Rep}`
+            `${buildString(node.children[i], isSVGNamespaceElement, [
+              ...depth,
+              i,
+            ])},${child_Rep}`
           );
         }
       }
