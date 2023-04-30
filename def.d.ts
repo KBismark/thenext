@@ -131,6 +131,10 @@ declare global {
   }
   interface Breaker {
     ui: {
+      createTheme(
+        numberOfThemes: Number,
+        styleObject: CSSStyleDeclaration
+      ): ThemeSwitcher;
       createApp(
         appName: string,
         ref: componentRef,
@@ -271,6 +275,7 @@ declare global {
     beforeUpdate: ((this: this, ...args: any[]) => void) | null;
     onCreation: ((this: this, ...args: any[]) => void) | null;
   }
+  type ThemeSwitcher = (theme: Number) => void;
   type componentRef = {
     [x: symbol]: {
       id: number;
