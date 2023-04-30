@@ -1568,6 +1568,53 @@
     return s;
   }
 
+  const createTheme = (function () {
+    var themes = 0;
+    function createTheme(numOfThemes, styleMethod) {
+      if (numOfThemes > 1) {
+        themes++;
+        const protoObj = {};
+        protoObj[symbolIdentifier] = {
+          numOfThemes,
+          styleMethod,
+          done: 1,
+          all: { 0: 1 },
+          theme: themes,
+          on: 0,
+        };
+        const style = document.createElement("style");
+        style.setAttribute("id", `theme-${themes}-0`);
+        style.textContent = styleMethod(0);
+        document.head.appendChild(style);
+        const obj = Object.create(protoObj);
+        protoObj.switchTheme = switchTheme.bind(obj);
+        return obj;
+      }
+      return {};
+    }
+    function switchTheme(themeNum) {
+      themeNum--;
+      const { numOfThemes, on, all, theme, styleMethod } =
+        this[symbolIdentifier];
+      if (themeNum < numOfThemes && on != themeNum) {
+        if (!all[themeNum]) {
+          all[themeNum] = 1;
+          this[symbolIdentifier].done++;
+          const style = document.createElement("style");
+          style.setAttribute("id", `theme-${theme}-${themeNum}`);
+          style.textContent = styleMethod(themeNum);
+          document.head.appendChild(style);
+          if (this[symbolIdentifier].done == numOfThemes) {
+            this[symbolIdentifier].styleMethod = null;
+          }
+        }
+        document.getElementById(`theme-${theme}-${on}`).disabled = true;
+        document.getElementById(`theme-${theme}-${themeNum}`).disabled = false;
+      }
+    }
+    return createTheme;
+  })();
+
   setFreezedObjectProperty(
     setFreezedObjectProperty(
       window,
@@ -1578,6 +1625,7 @@
     setFreezedObjectProperties(
       {},
       {
+        createTheme: createTheme,
         renderPage: renderPage,
         createComponent: Component,
         createApp: createApp,
@@ -1829,7 +1877,7 @@
       dynamicNodeMethod,
       dynamicNodePosition,
       dynamicNodeReplacer;
-      l = children.length;
+    l = children.length;
     while (i < l) {
       switch (Array.isArray(children[i])) {
         case true: //Dynamic node: This node may change later in the UI
@@ -1869,18 +1917,18 @@
     if (isHead) {
       const { classType } = componentObject_Internal;
       componentTypes[classType].value = {
-        element: element,//.cloneNode(true),
-        keyedNodes:keyedNodes,
+        element: element, //.cloneNode(true),
+        keyedNodes: keyedNodes,
       };
       l = dynamicNodes.length;
       var cachedDynamicNodes = new Array(l);
       var dynamicInfo;
       for (i = 0; i < l; i++) {
         dynamicInfo = dynamicNodes[i]; //
-        cachedDynamicNodes[i]={
+        cachedDynamicNodes[i] = {
           position: dynamicInfo.position,
           method: dynamicInfo.method,
-          index:dynamicInfo.index
+          index: dynamicInfo.index,
         };
       }
       componentTypes[classType].value.dynamicNodes = cachedDynamicNodes;
@@ -2042,7 +2090,7 @@
       });
       setMethods = setElementAttributes(element, attributes);
     }
-    
+
     //If keyed Attributes were cleared or not set,
     //Create from dynamic attributes and attributes from views
     else {
@@ -3159,13 +3207,13 @@
     }
     destroyComponent(head, true);
   }
-  function clearClonableViews(){
-    var i = cloneContainer.length-1;
-    while(i>-1){
+  function clearClonableViews() {
+    var i = cloneContainer.length - 1;
+    while (i > -1) {
       componentTypes[cloneContainer[i]].value = null;
       i--;
     }
-    cloneContainer=[];
+    cloneContainer = [];
   }
 
   Breaker.ui.run = Run;
