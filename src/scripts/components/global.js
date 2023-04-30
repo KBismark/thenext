@@ -42,21 +42,3 @@ createTheme(2, {
   },
 });
 //</theme>
-
-const styles = createStyleSheet({});
-
-!(function () {
-  function createTheme(numOfThemes) {
-    if (numOfThemes > 1) {
-      const protoObj = { switchTheme };
-      protoObj[symbolIdentifier] = { numOfThemes };
-
-      return Object.create(protoObj);
-    }
-    return {};
-  }
-  function switchTheme(themeNum) {
-    if (themeNum < this[symbolIdentifier].numOfThemes) {
-    }
-  }
-})();

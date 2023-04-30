@@ -1610,6 +1610,7 @@
         }
         document.getElementById(`theme-${theme}-${on}`).disabled = true;
         document.getElementById(`theme-${theme}-${themeNum}`).disabled = false;
+        this[symbolIdentifier].on = themeNum;
       }
     }
     return createTheme;
